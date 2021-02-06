@@ -1,0 +1,66 @@
+---
+title: "R Assignment 1"
+author: "Akshita Gundavarapu"
+date: "`r Sys.Date()`"
+output: html_document
+---
+##### Problem 1
+```{r Setup, include=TRUE}
+library(knitr)
+library(dplyr)
+library(ggplot2)
+
+knitr::opts_chunk$set(echo = TRUE)
+SHOW_SOLUTIONS = TRUE
+```
+##### Problem 2
+
+```{r Finding area of 8 triangles}
+bases <- seq(from=0.5, to=2, by=0.5)
+Area1 <- (bases*1)/2
+Area2 <- (bases*3)/2
+Area1 
+Area2
+
+
+```
+######
+A combination with a base of 0.5 and height of 1, leads to the minimum area of 0.25. A combination with a base of 2 and height of 3, leads to the maximum area of 3.0. An area of 0.75 is achieved when the base is 2 and height is 1, or when the base is 0.5 and the height is 3. 
+
+##### Problem 3
+```{r Read in Patient Data}
+#a)
+P.df <- read.csv("Patient_Data.csv", header=TRUE, as.is=TRUE)
+P.df$Sex <- as.factor(P.df$Sex)
+P.df$Sex
+P.df$MaritalStat <- as.factor(P.df$MaritalStat)
+P.df$MaritalStat
+#b)
+P.df[50,]$TotChol
+#c)
+P.df[c(15, 25, 99), c(6, 7)]
+
+
+```
+The Total cholestrol level of the 50th patient was found to be 186. 
+
+##### Problem 4
+
+```{r Subset Data}
+#a)
+P.D <- filter(P.df, MaritalStat == "D")
+summary(P.D$MaritalStat)
+#b)
+mean(P.D$TotChol)
+#c)
+sd(P.D$TotChol)
+#d)
+P.M <- filter(P.df, MaritalStat =="M")
+mean(P.M$TotChol)
+sd(P.M$TotChol)
+
+```
+There are a total number of 24 Divorced Patients. The mean total cholestrol of divorced patients is 221.4, whereas the mean total cholestrol of Married Patients is 223.1. The standard deviation of total cholestrol in Divorced patients is 19.1, whereas the standard deviation of total cholestrol in Married patients is 22.3. The standard deviation and mean of total cholestrol in Married patients is greater than the standard deviation and mean of total cholestrol in Divorced patients.  
+
+
+##### End of R Assignment 1
