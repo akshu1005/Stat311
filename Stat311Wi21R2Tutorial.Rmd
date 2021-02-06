@@ -1,0 +1,457 @@
+---
+title: "Stat311 R 2 Tutorial:  Functions for EDA and Probability Distributions"
+author: "Tamre Cardoso"
+date: "12/19/2021"
+output: html_document
+---
+
+```{r setup, include=TRUE}
+library(knitr)
+library(dplyr)
+library(ggplot2)
+library(RcmdrMisc)
+knitr::opts_chunk$set(echo = TRUE)
+SHOW_SOLUTIONS = TRUE
+```
+Read in the Diamonds data set. Since as.is is set to TRUE in the call to read.csv, the three categorical variables are treated as type character. So that R properly recognizes the character variables as categorical variables, we set the three categorical variables to type factor using the as.factor function.
+
+```{r Read in data}
+D.df <- read.csv("Diamonds.csv", header=TRUE, as.is=TRUE)
+glimpse(D.df)
+#D.df$Color <- as.factor(D.df$Color)
+#D.df$Clarity <- as.factor(D.df$Clarity)
+#D.df$Rater <- as.factor(D.df$Rater)
+#glimpse(D.df)
+```
+
+Notice that after the second call the glimpse function, the variable type changes from chr to fct.
+
+#### Univariate summary statistics for numeric variables
+
+The summary and sd functions quickly provide basic summaries. The full line of code is included in ( ) so that the output of wt.summary and wt.sd are printed. A different function, summarize( ) may be used to customize the summary statistics that you want into one output. See Chapter 3 of Statistical Inference for Data Science for many examples. 
+
+```{r Summary stats}
+(wt.summary <- summary(D.df$Weight)) # gives a six number sample summaries
+(wt.sd <- sd(D.df$Weight)) # gives sample standard deviation
+(sum.weight <- D.df %>% summarize(mean = mean(Weight, na.rm=TRUE),
+                                 SD = sd(Weight, na.rm=TRUE)))
+(sum.weight <- D.df %>% summarize(Min = min(Weight, na.rm=TRUE), 
+                                  Q1 = quantile(Weight, 0.25, na.rm=TRUE),
+                                  Median = quantile(Weight, 0.50,
+                                                    na.rm=TRUE),
+                                  Q3 = quantile(Weight, 0.75, na.rm=TRUE),
+                                  Max = max(Weight, na.rm=TRUE),
+                                  mean = mean(Weight, na.rm=TRUE),
+                                  SD = sd(Weight, na.rm=TRUE)))
+```
+#### Graphical summaries for univariate quantitative variables
+##### Exploring diamond rice using a histogram and a boxplot 
+
+hist and boxplot are two functions that are part of base R.
+
+```{r Base hist and boxplot}
+hist(D.df$Price, main="", xlab="Price (Singapore Dollars)")
+boxplot(D.df$Price, ylab="Price (Singapore Dollars)")
+```
+This distribution of Price is unimodal and right-skewed. Additionally, the boxplot of all prices shows that there are no flagged outliers. 
+
+##### Using ggplot2
+##### ggplot2 for histograms
+```{r ggplot2 hist}
+ggplot(D.df, aes(x=Price)) + 
+  geom_histogram(color="black") + xlab("Diamond Price (Singapore Dollars)")
+```
+The default number of bins for histograms using ggplot2 is generally large and can make it difficult to summarize the distribution of the variable. From this distribution based on 30 bins, you might describe diamond prices as multimodal. This may be correct at a very fine level, but maybe you want fewer levels to assess a more general shape. A couple of optional arguments that can be used to adjust the number of bins in a ggplot2 histogram are binwidth and bins. Use bins to specify the number of bins; use binwidth to adjust the width of each bin. You can also specify breaks (not covered here). Use ?geom_histogram to bring up the help file and see the many options that can be used when creating histograms.
+
+```{r ggplot2 more hist}
+ggplot(D.df, aes(x=Price)) + 
+  geom_histogram(bins=9, color="black") + xlab("Diamond Price (Singapore Dollars)")
+ggplot(D.df, aes(x=Price)) + 
+  geom_histogram(binwidth = 1000, color="black", fill="blue") + 
+  xlab("Diamond Price (Singapore Dollars)")
+```
+##### ggplot2 for boxplots
+
+```{r ggplot2 boxplots}
+p <- ggplot(D.df, aes(x=Price, y="")) +
+        geom_boxplot() + 
+        xlab("Diamond Price (Singapore Dollars)") +
+        ylab("")
+p
+# Rotate the box plot
+p + coord_flip()
+# Notched box plot
+ggplot(D.df, aes(x=Price, y="")) + 
+  geom_boxplot(notch=TRUE) +
+  xlab("Diamond Price (Singapore Dollars)") +
+  ylab("")
+```
+
+#### Graphical summaries for looking at two variables.
+
+We will first consider one quantitative (Price) and one qualitative variable (Clarity). We can make comparative boxplots to see how the distribution of price varies with the level of Clarity.
+
+```{r ggplot2 comparative boxplot}
+# Using base R
+boxplot(D.df$Price ~ D.df$Clarity, ylab="Price (Singapore Dollars)",
+        xlab = "Clarity")
+
+# Using ggplot2
+p <- ggplot(D.df, aes(x=Clarity, y=Price)) + 
+  geom_boxplot() + xlab("Clarity") +
+  ylab("Diamond Price (Singapore Dollars)")
+p
+# Rotate the box plot
+p + coord_flip()
+# Notched box plot
+ggplot(D.df, aes(x=Clarity, y=Price)) + 
+  geom_boxplot(notch=TRUE) + xlab("Clarity") +
+  ylab("Diamond Price (Singapore Dollars)")
+# Change outlier, color, shape and size
+ggplot(D.df, aes(x=Clarity, y=Price)) + 
+  geom_boxplot(outlier.colour="red", outlier.shape=8,
+                outlier.size=4) + xlab("Clarity") +
+  ylab("Diamond Price (Singapore Dollars)")
+```        
+
+The comparative boxplots of prices by diamond Clarity do show some differences in Price when Clarity is considered. Clarity is an ordinal categorical variable (see the data dictionary). When making interpretations from comparative boxplots is may make things easier if original variables are placed in order.
+
+The Clarity variable labels can be ordered from best to worst. To reorder a factor variable see the code below. Now when we make the comparative boxplot, we get the labels ordered from best to worst. The first line sets the order of the factors. The second line creates an "ordered" factor.
+
+```{r order factors}
+D.df$Clarity <- factor(D.df$Clarity, levels=c("IF", "VVS1", "VVS2",
+                                               "VS1", "VS2"))
+
+D.df$Clarity <- ordered(D.df$Clarity, levels=c("IF", "VVS1", "VVS2",
+                                               "VS1", "VS2"))
+boxplot(D.df$Price ~ D.df$Clarity, ylab="Price (Singapore Dollars)",
+        xlab = "Clarity")
+```
+IF is the best clarity yet it has the lowest median price. VVS1 and VVS2 appear to have similar distributions with higher median prices. VS2 has the highest median price but is the worst clarity. Must be something else going on. Maybe need to look at Color and Weight.
+
+##### Using plot, cor and lm functions for two quantitative variables.
+
+```{r plot function}
+plot(D.df$Price, D.df$Weight, xlab="Price (Singapore Dollars)", ylab="Weight (Carat)") # plot(x,y)
+```
+
+The relationship between Price and Weight appears to be curvilinear, but basically linear up to just over 10,000 Singapore $.
+
+```{r subset and plot}
+# subset the data to only include records with price <=10000
+PriceLT10 <- D.df[D.df$Price <= 10000,]
+nrow(PriceLT10) # 282; 308-232 = 76 observations removed
+plot(PriceLT10$Price, PriceLT10$Weight, xlab="Price (Singapore Dollars)",
+     ylab="Weight (Carat)")
+```
+The subset of observations for weight on price with prices <= 10,000 looks more linear compared with the entire data set. The correlation is about 0.97. The variability in weights appear to increase with increasing price. For fitting a line this is not a problem, but it could be for inference (Lesson 8). We will continue with the relationship using our subset of data.
+
+```{r lm and abline}
+# use lm to fit a linear model
+lm.out <- lm(PriceLT10$Weight ~ PriceLT10$Price) # lm(y ~ x)
+summary(lm.out)
+# replot the data and add the fitted regression line
+plot(PriceLT10$Price, PriceLT10$Weight, xlab="Price (Singapore Dollars)",
+     ylab="Weight (Carat)")
+abline(lm.out, col="blue", lwd=2)
+```
+The regression line is Wt.hat = 0.195 + 0.00009093(Price). Since the slope is such a tiny number, think about using a multiple of the price when interpreting the expected weight. For each additional 2,000 Singapore dollars, we expect the diamond weight to increase by about 0.18 carats, on average. 
+
+We remake the scatterplot and add the regression line using the abline function. abline recognizes the lm object and knows how to pull off the estimated intercept and slope.
+
+##### Using ggplot2 for scatterplots
+
+We will use the data set with observations for Price < 10,000.
+
+```{r ggplot2 scatterplots}
+ggplot(PriceLT10, aes(x=Price, y=Weight)) + geom_point() +
+      xlab("Price (Singapore Dollars)") +
+      ylab("Weight (Carat)")
+# Change the point size, and shape
+ggplot(PriceLT10, aes(x=Price, y=Weight)) +
+  geom_point(size=2, shape=23)  +
+      xlab("Price (Singapore Dollars)") +
+      ylab("Weight (Carat)")
+# Add a smooth curve to the plot;
+ggplot(PriceLT10, aes(x=Price, y=Weight)) +
+  geom_point() +  
+  geom_smooth(method="auto", se=FALSE) +
+      xlab("Price (Singapore Dollars)") +
+      ylab("Weight (Carat)")
+# Add the regression line 
+ggplot(PriceLT10, aes(x=Price, y=Weight)) +
+  geom_point() +
+  geom_smooth(method=lm, se=FALSE,linetype="dashed",
+              color="green") +
+      xlab("Price (Singapore Dollars)") +
+      ylab("Weight (Carat)")
+# Color code points by Clarity
+ggplot(PriceLT10, aes(x=Price, y=Weight, color=Clarity)) +
+  geom_point() +
+  geom_smooth(method=lm, se=FALSE, linetype="dashed",
+              color="green") +
+      xlab("Price (Singapore Dollars)") +
+      ylab("Weight (Carat)")
+# Use different plotting symbols by Clarity
+ggplot(PriceLT10, aes(x=Price, y=Weight, shape=Clarity)) +
+  geom_point() +
+      xlab("Price (Singapore Dollars)") +
+      ylab("Weight (Carat)")
+# Use different plotting symbols and colors by Clarity
+ggplot(PriceLT10, aes(x=Price, y=Weight, shape=Clarity,
+                      color=Clarity)) +
+  geom_point() +
+      xlab("Price (Singapore Dollars)") +
+      ylab("Weight (Carat)")
+```
+
+##### Summaries for a single qualitative variable
+
+To get the counts for the labels of a single qualitative variable, use the table function. You can save any of the table results by assigning them to an object. The code below saves the contingency table for Color in the object tab1. The object tab1 can then be used to get the percentages for Color by dividing by the total count (calculated using the sum function). The round function was used to only display the percentages to one decimal place.
+
+Alternatively, use the prop.table function to get proportions instead of counts.
+
+```{r table function}
+(tab1 <- table(D.df$Color))
+(tab1PCT <- round(tab1/sum(tab1) * 100,1))
+prop.table(tab1) #get proportions
+prop.table(tab1) * 100 # get percentages
+round(prop.table(tab1) * 100, 1) # round percentages to one decimal place
+```
+
+##### Summaries for Two Qualitative Variables
+
+To get a contingency table of counts for two qualitative variables enter the names of both variables. The first variable will be used for the row labels and the second variable will be used for the column variable. There are also functions available to get joint, marginal and conditional (row and column) proportions for contingency tables.
+
+```{r contingency tables}
+# get contingency table with counts
+(tab2 <- table(D.df$Color, D.df$Rater))
+# get contingency table with joint percentages
+# rounded to one decimal place
+round(prop.table(tab2) * 100, 1)
+# get conditional row percentages 
+(Condrow.pct <- round(prop.table(tab2, margin=1) * 100, 1))
+apply(Condrow.pct, 1, sum)
+# get conditional column percentages 
+(Condcol.pct <- round(prop.table(tab2, margin=2) * 100, 1))
+apply(Condcol.pct, 2, sum)
+# get similar things using the colPercents and rowPercents
+# functions in the RcmdrMisc package. You will need to install
+# the package. The library call is already in the setup block.
+rowPercents(tab2, digits=1)
+colPercents(tab2, digits=1)
+```
+
+#### Making bar charts in R for a single qualitative variable
+
+```{r bar charts}
+# You pass the counts to barplot by using the table function
+barplot(table(D.df$Color), ylab = "Count")
+# Using ggplot2
+ggplot(D.df, aes(x=Color)) +
+  geom_bar(stat="count", width=0.7, fill="steelblue") +
+  theme_minimal()
+# Change colors
+ggplot(D.df, aes(x=Color)) +
+  geom_bar(stat="count", width=0.7, color="black", fill="steelblue")
+```
+
+#### Making comparative bar charts in R for two qualitative variables 
+
+```{r comparative bar charts}
+# You pass the counts to barplot by using the table function
+# Using tab2 saved above (in the contingency tables chunk) for joint counts of Color and Rater
+barplot(tab2)
+```
+
+By default R gives a stacked bar chart and no legend. R puts the columns from the table on the x-axis and puts the counts of the rows in the stacks. You need to add a legend.text argument to the call.
+
+```{r}
+# You pass the counts to barplot by using the table function
+# Using tab2 saved above for joint counts of Color and Rater
+barplot(tab2, legend.text=c("D","E","F","G","H","I"))
+# Use the beside argument to get side-by-side bars.
+barplot(tab2, legend.text=c("D","E","F","G","H","I"), beside=TRUE)
+```
+
+The barplot above is based on raw counts and does not take in to account that the row and column totals vary. A better representation is to make conditional barplots, conditioning on either row or column totals. We will use the Barplot (with a capital B) from the RcmdrMisc package as it 
+does all the calculations for you.
+
+```{r Conditional bar charts}
+# Unconditional Barplot (conditional=FALSE, the default)
+Barplot(D.df$Rater, by=D.df$Color, scale = "percent", 
+   conditional=FALSE, style = "parallel", 
+   xlab = "Rater", legend.title = "Color", 
+   ylab = "Percent", main=NULL, legend.pos = "above")
+# Conditional percentages of Color within levels of Rater
+# This is using the column percentages based on tab2
+Barplot(D.df$Rater, by=D.df$Color, scale = "percent", 
+   conditional=TRUE, style = "parallel", 
+   xlab = "Rater", legend.title = "Color", 
+   ylab = "Percent", main=NULL, legend.pos = "above")
+# Conditional percentages of Rater within levels of Color
+# This is using the row percentages based on tab2
+Barplot(D.df$Color, by=D.df$Rater, scale = "percent", 
+   conditional=TRUE, style = "parallel", 
+   xlab = "Color", legend.title = "Rater", 
+   ylab = "Percent", main=NULL, legend.pos = "above")
+
+# If the installation of RcmdrMisc does not work for you,
+# use the following code with the base barplot function to get
+# conditional percentages of Color within levels of Rater
+Cond.col <- prop.table(tab2, margin=2)
+barplot(Cond.col,beside=TRUE,col=c("blue","green","orange",
+                                   "black","brown","magenta"),
+        names.arg=levels(D.df$Rater),
+        ylab="Relative Frequency",xlab="Rater")
+legend("topleft",pch=15, col=c("blue","green","orange",
+                           "black","brown","magenta"), bty="n",
+       legend=c("D","E","F","G","H","I"), horiz=TRUE)
+
+# use the following code with the base barplot function to get
+# conditional percentages of Rater within levels of Color
+# note that you need to but Rater in rows and Color in columns
+tab3 <- table(D.df$Rater,D.df$Color)
+Cond.col <- prop.table(tab3, margin=2)
+barplot(Cond.col,beside=TRUE,col=c("blue","green","orange"),
+        names.arg=levels(D.df$Color),
+        ylab="Relative Frequency",xlab="Color")
+legend("topright",pch=15, col=c("blue","green","orange"), bty="n",
+       legend=c("GIA", "HRD", "IGI"), horiz=TRUE)
+```
+
+#### Probability Distributions in R
+
+##### Normal Distribution
+
+We will generate a small (pseudo)random set of 100 values from a normal
+distribution with mean of 0.6 and SD of 0.25.
+
+```{r Normal distribution}
+# use set.seed(123) if you want to be able to reproduce 
+# random draws
+set.seed(123)
+# Use the rnorm function to generate 100 draws from a 
+# normal distribution with the given mean and sd;
+# The default for rnorm is the Standard Normal Distribution
+# with mean = 0 and sd = 1.
+X <- rnorm(100, mean=0.6, sd=0.25)
+# plot our X values
+hist(X, main="Normal(0.6, 0.25)")
+# make a normal quantile plot and add the y = x line
+qqnorm(X)
+qqline(X)
+
+# Use pnorm to find probabilities 
+# associated with the normal distribution
+# Find P(X < 0.1)
+pnorm(0.1, mean= 0.6, sd=0.25)
+# Find P(X > 0.8)
+1 - pnorm(0.8, mean= 0.6, sd=0.25)
+# or
+pnorm(0.8, mean= 0.6, sd=0.25, lower.tail=FALSE)
+# Find P(0.2 <= X <= 0.7)
+# This will require two calls to pnorm; 
+# calculate as P(X <= 0.7) - P(X <= 0.2)
+pnorm(0.7,mean = 0.6, sd = 0.25) - pnorm(0.2,mean = 0.6, sd = 0.25)
+
+# Use qnorm to fine the value of X such that P(X < x) = 0.10
+qnorm(0.1, mean = 0.6, sd = 0.25)
+# This tells us that P(X < 0.2796) = 0.10
+# We can verify this using pnorm
+pnorm(0.2796, mean = 0.6, sd = 0.25) # answer rounds to 0.10
+```
+
+The probability that X is less than 0.1 is about 0.0228; the probability that X is greater than 0.8 is about 0.2119; and, the probability that X is greater than 0.2 but less than 0.7 is about 0.6006. Finally, the probability that X is 0.2796 is about 10%.
+
+##### Continuous Uniform Distribution
+
+```{r continuous Uniform dist}
+# punif() gives probability (X < x) for a continuous 
+# uniformally distributed random variable on the interval [min, max]
+# qunif() gives you the value of x for P(X < x) = some p
+# runif() gives independent random draws from a 
+# continuous uniform distribution on the interval [min, max]
+set.seed(178)
+ran.u <- runif(60,min=0,max=1)
+hist(ran.u, main="X ~ Uniform(0, 1)")
+# Find P(X < 0.6)
+punif(0.6,0,1)
+# Find the value of x such that P(X < x) = 0.25
+qunif(0.25,0,1)
+```
+
+##### Bernoulli and Binomial Distributions
+
+Bernoulli and Binomial use the same functions--recall that a Bernoulli RV is just a binomial RV with n = 1
+
+pbinom() gives probability (X <= x) for a binomial random variable with parameters p and n. NOTE the use of <= instead of <; since this is a discrete distribution <= is not the same as <.
+
+qbinom() gives you the value of x for P(X <= x) = some p
+rbinom() gives independent random draws from a binomial distribution
+
+```{r Bernoulii and Binomial dists}
+set.seed(456)
+#Generate one flip of a fair coin; let 0 = Heads and 1 = Tails
+rbinom(n = 1, size = 1, p = 0.5) 
+# Here n = total number of observations to generate and
+# size = number of trials and 0.5 is p
+
+# Generate 50 flips of a fair coin
+rbinom(50, 1, 0.5)
+
+#Find P(X <= 7) for X ~ Binomial(n=12, p = 0.3)
+pbinom(7, 12, 0.3)
+
+# Find the value of x when P(X <= x) = 0.50 for 
+# X ~ Binomial(n=12, p = 0.3)
+qbinom(0.50, 12, 0.3) # P(X <= 4) ~ 50%
+```
+
+##### Poisson Distribution
+
+ppois() gives probability (X <= x) for a Poisson distributed RV with lambda; in class we used mu = lambda x t; for these functions you just need to enter either lambda if t = 1 or you need to enter lambda*t if you are scaling the unit rate up or down.
+
+NOTE the use of <= instead of <; since this is a discrete distribution <= is not the same as <
+
+qpois() gives you the value of x for P(X <= x) = some p
+
+rpois() gives independent random draws from a Poisson distribution
+
+```{r Poisson dist}
+set.seed(23)
+# Generate 100 independent draws from a Poisson 
+# distribution with lambda = 4
+rpois(100,4)
+hist(rpois(100,4), main="X ~ Poisson(4)")
+# Calculate P(X <= 6)
+ppois(6, 4)
+# Calculate P(X = 6)
+ppois(6, 4) - ppois(5, 4)
+# What is the value of x such that P(X <= x) = 0.10
+qpois(0.10, 4)
+```
+
+##### Geometric and Hypergeometric RV's in R
+
+I generally just write my own code for these when needed but if you are interested, you can look up the function rhyper and rgeom and read about the set of functions available in R for these two types of random variables.
+
+##### Combinations and Factorials in R
+
+The two main functions are choose for combinations and factorial for finding factorials.
+
+```{r Combinations and factorials}
+# Use choose(n, r) to find the number of combinations 
+# of r things from n things
+# 95 choose 5
+choose(95,5)
+
+# To find permutations remember that 
+# n C r = n P r/r! ==> n P r = n C r * r!
+# Find the number of permutations of 5 things from 
+# 95 things
+choose(95,5) * factorial(5)
+
+# Find 10! 
+factorial(10)
+```

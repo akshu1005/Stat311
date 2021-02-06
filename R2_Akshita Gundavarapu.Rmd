@@ -1,0 +1,143 @@
+---
+title: "R Assignment 2"
+author: "Akshita Gundavarapu"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=TRUE}
+library(knitr)
+library(dplyr)
+#library(ggplot2)
+#library(RcmdrMisc)
+knitr::opts_chunk$set(echo = TRUE)
+SHOW_SOLUTIONS = TRUE
+```
+
+
+```{r reading in data}
+D.df <- read.csv("Patient_Data.csv", header=TRUE, as.is=TRUE)
+D.df$Sex <- as.factor(D.df$Sex)
+D.df$MaritalStat <- as.factor(D.df$MaritalStat)
+
+```
+
+
+##### Problem 1
+```{r Univariate EDA}
+(sum.weight <- D.df %>% summarize(Min = min(TotChol, na.rm=TRUE), 
+                                  Q1 = quantile(TotChol, 0.25, na.rm=TRUE),
+                                  Median = quantile(TotChol, 0.50,
+                                                    na.rm=TRUE),
+                                  Q3 = quantile(TotChol, 0.75, na.rm=TRUE),
+                                  Max = max(TotChol, na.rm=TRUE),
+                                  Mean = mean(TotChol, na.rm=TRUE),
+                                  Standard_deviation = sd(TotChol, na.rm=TRUE)))
+
+hist(D.df$TotChol, main="", xlab="Total Cholestrol (mg/dL)", breaks = 10)
+boxplot(D.df$TotChol, ylab="Total Cholestrol (mg/dL)")
+
+```
+
+From the 7 summary table, histogram and boxplot the distribution seems to be bimodal and right skewed. We can tell that it is right skewed because the mean (219.27 mg/dL) is greater than the median (217.5). Moreover, the data ranges from 184 mg/dL to 294mg/dL, so it has a range of 110. The data is also spread with a standard deviation of 25.1 mg/dL is and we also have one upper boundry outlier which is the data value of 294 mg/dL. 
+
+
+#### Problem 2
+
+
+
+```{r Comparative boxplots}
+
+boxplot(D.df$TotChol ~ D.df$Sex, ylab="Total Cholestrol (mg/dL)",
+        xlab = "Sex")
+
+```        
+
+The comparative box plot shows that the median total cholestrol of females is much lower than the median total cholestrol of the males. The total cholestrol of females is also more spread out than the total cholestrol of the males. Moreover, the males data shows two ouliers which fall over the upper boundry, whereas the females data has no outliers.
+
+##### Problem 3
+```{r Contingency table1}
+
+(tab1 <- table(D.df$Sex, D.df$MaritalStat))
+
+prop.table(tab1)*100
+
+```
+Table of counts and table of joint percentages have the same values. This is because the total number of datapoints is 100, so the percentages and counts are esentially the same. 
+
+
+##### Problem 4
+
+
+```{r contingency table2}
+marginal_percentage_D <- ((11+13)/100)*100
+marginal_percentage_M <- ((20+14)/100)*100
+marginal_percentage_S <- ((9+17)/100)*100
+marginal_percentage_W <- ((10+6)/100)*100
+
+marginal_percentages <- c(marginal_percentage_D, marginal_percentage_M, marginal_percentage_S, marginal_percentage_W)
+
+marginal_percentages 
+```
+
+
+##### Problem 5
+```{r contingency table3}
+tab2 <- (Condrow.pct <- round(prop.table(tab1, margin=1) * 100, 1))
+tab2[1,]
+
+```
+
+##### Problem 6
+```{r comparative bar charts}
+
+barplot(tab2, legend.text=c("Female","Male"), beside=TRUE)
+```
+From the bar plot it is evident that male data and female data do not show the same patterns in all 4 marital statuses. For example, there are more males who are divorced compared to females, however there are more females who are married than male. There are also more single males than females, however more widowed females than males. This shows that the patterns in males and males is not consistent in all 4 marital status categories, So we can say that  marital status and sex appear to be statistically dependent. 
+
+##### Problem 7
+
+```{r Scatter Plot }
+#a)
+plot(D.df$Weight, D.df$TotChol, xlab="Weight (pounds)", ylab="Total Cholestrol (mg/dL)")
+
+#b)
+cor(D.df$TotChol, D.df$Weight)
+#c)
+lm.out <- lm(D.df$Weight ~ D.df$TotChol) 
+summary(lm.out)
+
+```
+The scatter plot shows appears to show no correlation
+
+The correcation coeeficient was found to be 0.09 which is very close to zero. This can be interpretted as no correcation or a very slight positive correlation.
+
+The regression parameter estimates for total cholesterol on weight are
+b0 = 136.52 and b1 = 0.139
+
+d)
+regression equation
+Total Cholestrol = 136.52 + 0.139(Weight)
+
+e)
+The regression slope parameter is estimated to be 0.139. This would mean that for every pound increase in Weight, there is a 0.139 mg/dL increase in Total Cholestrol. 
+
+f)
+I don't think this regression model is very accurate. From the scatterplot we can see that the data has no correlation so a linear regression model may not be a right fit for this data instead a quadratic or cubic model may make more sense. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
