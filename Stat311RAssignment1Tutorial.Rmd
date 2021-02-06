@@ -1,0 +1,60 @@
+---
+title: "Stat311 R1 Tutorial"
+author: "Tamre Cardoso"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r Setup, include=TRUE}
+library(knitr)
+library(dplyr)
+#library(RcmdrMisc)
+knitr::opts_chunk$set(echo = TRUE)
+SHOW_SOLUTIONS = TRUE
+```
+##### Problem 1
+
+```{r Using R as a Calculator}
+2 + 5
+10 - 5
+(diff <- 10 - 5)
+4 * 3
+4 - 5 * 2 #without ( ) follows PEMDAS
+(4 - 5) * 2
+5^2
+log(10) #natural log (ln)
+log10(10)
+exp(5)
+x <- c(1:10)
+(xsq <- x^2)
+(sumxsq <- sum(xsq))
+```
+
+Read in the Patient_Data.csv data set. Since as.is is set to TRUE in the call to read.csv, the three categorical variables are treated as type character. So that R properly recognizes the character variables as categorical variables, we set the three categorical variables to type factor using the as.factor function.
+
+```{r Read in Patient Data}
+P.df <- read.csv("Patient_Data.csv", header=TRUE, as.is=TRUE)
+glimpse(P.df)
+P.df[1,] #first row, all columns
+P.df[1:5,] #first 5 rows, all columns
+P.df[,6] # only column 6 (TotChol), all rows
+P.df[,c(1,6,7)] # all rows, columns 1, 6 and 7 (ID, TotChol and SystolicP)
+P.df[1,6] # value of TotChol in the first row
+```
+
+```{r Working with Single Variables}
+P.df$Sex
+P.df$Sex <- as.factor(P.df$Sex)
+P.df$Sex
+summary(P.df$Age)
+sd(P.df$Age)
+P.df[1:5,]$Age
+```
+
+```{r Subset Data}
+P.M <- filter(P.df, Sex == "M")
+summary(P.M$Age)
+P.MAgeSub <- filter(P.M, Age >=28.75 & Age < 79) # & AND; | OR
+summary(P.MAgeSub$Age)
+```
+##### End of R1 Tutorial
